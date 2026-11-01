@@ -44,6 +44,7 @@ Or with `go install` (binary is named `llamactl`; symlink or rename it to `llama
 
 ```sh
 go install github.com/chubuk/llamactl@latest
+mkdir -p ~/bin
 ln -s "$(go env GOPATH)/bin/llamactl" ~/bin/llama
 ```
 
