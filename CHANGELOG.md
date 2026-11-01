@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.2 — 2026-11-01
+
+- `tune` UX fixes:
+  - a plain `llama tune <name>` reuses `n-cpu-moe` / `cpu-moe` / `n-cpu-ffn`
+    from the existing preset instead of replacing them with a giant
+    materialized `override-tensor` line
+  - stale `override-tensor` is removed from the section when simple
+    placement flags are in effect
+  - merged sections no longer accumulate trailing blank lines
+
 ## 1.0.1 — 2026-11-01
 
 - Russian documentation: `README.ru.md` (with language links in `README.md`)
