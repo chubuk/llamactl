@@ -1,0 +1,5 @@
+.mimocode/
+llama
+dist/
+*.bak
+*.lock

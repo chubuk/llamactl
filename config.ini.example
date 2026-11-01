@@ -1,0 +1,25 @@
+# Пример конфигурации llamactl.
+# Установите как ~/.config/llamactl/config.ini (или укажите путь в LLAMA_CONFIG).
+# Формат: ключ = значение, комментарии — # или ;.
+# Приоритет: переменные окружения (LLAMA_*) > этот файл > значения по умолчанию.
+
+# Каталог с активными моделями (*.gguf)
+#models-dir = /home/you/models
+
+# Каталог с отключёнными моделями
+#disabled-dir = /home/you/models-disabled
+
+# Файл пресетов llama-server (по умолчанию — <models-dir>/presets.ini)
+#presets = /home/you/models/presets.ini
+
+# Порт сервера
+#port = 8033
+
+# Путь к llama-fit-params (используется командой tune)
+#fit-params = /home/you/llama.cpp/build/bin/llama-fit-params
+
+# Базовое имя systemd-юнита (прокси-вариант — <service>-proxy)
+#service = llama-server
+
+# Редактор для команд presets/edit (иначе VISUAL/EDITOR)
+#editor = nano

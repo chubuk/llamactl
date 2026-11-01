@@ -1,0 +1,53 @@
+version: 2
+
+project_name: llamactl
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+
+archives:
+  - formats:
+      - tar.gz
+
+nfpms:
+  - package_name: llamactl
+    homepage: https://github.com/chubuk/llamactl
+    maintainer: Vlad Chubuk <chubuk@gmail.com>
+    description: |
+      CLI manager for a local llama.cpp server and model presets.
+      Controls systemd user units (normal and MCP-proxy modes), downloads
+      models from HuggingFace and auto-tunes presets.ini to your GPU/CPU
+      via llama-fit-params.
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+    contents:
+      - src: deploy/llama-server.service
+        dst: /usr/share/llamactl/llama-server.service
+      - src: deploy/llama-server-proxy.service
+        dst: /usr/share/llamactl/llama-server-proxy.service
+      - src: config.ini.example
+        dst: /usr/share/doc/llamactl/config.ini.example
+      - src: README.md
+        dst: /usr/share/doc/llamactl/README.md
+      - src: LICENSE
+        dst: /usr/share/doc/llamactl/LICENSE
+      - dst: /usr/bin/llama
+        type: symlink
+        link: /usr/bin/llamactl
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true
