@@ -23,3 +23,6 @@
 
 # Редактор для команд presets/edit (иначе VISUAL/EDITOR)
 #editor = nano
+
+# Язык интерфейса: en | ru (по умолчанию — по локали LANG)
+#lang = ru

@@ -107,8 +107,11 @@ Examples:
 llama add bartowski/Qwen2.5-Coder-14B-Instruct-GGUF Qwen2.5-Coder-14B-Instruct-Q4_K_M.gguf
 llama tune Qwen2.5-Coder-14B-Instruct-Q4_K_M
 llama tune Qwen3.6-35B-A3B-UD-Q4_K_M --n-cpu-moe 28   # hybrid MoE: experts in RAM
+llama add org/model file.gguf --ctx 32768              # skip the interactive prompt
 llama start-proxy
 ```
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## How `tune` works
 
@@ -127,6 +130,19 @@ an open HTTP forwarder intended only for the built-in Web UI to reach remote MCP
 servers — the upstream llama.cpp docs explicitly warn *not* to enable it in
 untrusted environments (SSRF risk). Do not expose the port to the network without
 additional protection (firewall, reverse proxy with auth).
+
+## Development
+
+```sh
+go fmt ./... && go vet ./... && go test ./...
+go build -o llama .
+```
+
+Release packages (`.deb`/`.rpm`, amd64/arm64) are built with GoReleaser:
+
+```sh
+goreleaser release --snapshot --clean   # local build into dist/
+```
 
 ## License
 
