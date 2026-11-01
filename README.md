@@ -36,6 +36,7 @@ From source:
 
 ```sh
 git clone https://github.com/chubuk/llamactl && cd llamactl
+mkdir -p ~/bin
 go build -o ~/bin/llama .
 ```
 

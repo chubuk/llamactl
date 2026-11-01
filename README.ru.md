@@ -38,6 +38,7 @@ systemd-юниты (обычный режим и MCP-proxy), скачивани�
 
 ```sh
 git clone https://github.com/chubuk/llamactl && cd llamactl
+mkdir -p ~/bin
 go build -o ~/bin/llama .
 ```
 
