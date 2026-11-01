@@ -188,7 +188,7 @@ func withPresetsLock(path string, fn func() error) error {
 	}
 	defer f.Close()
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		return fmt.Errorf("блокировка %s.lock: %w", path, err)
+		return fmt.Errorf(tr("lock %s.lock: %w"), path, err)
 	}
 	defer syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
 	return fn()
@@ -208,7 +208,7 @@ func ensureDirs(cfg config) error {
 
 func cmdPreset(cfg config, args []string) error {
 	if len(args) < 1 || args[0] == "" {
-		usage("укажите имя модели: llama preset <имя>")
+		usage(tr("specify model name: llama preset <name>"))
 	}
 	if err := ensureDirs(cfg); err != nil {
 		return err
@@ -219,7 +219,7 @@ func cmdPreset(cfg config, args []string) error {
 		return err
 	}
 	if text == "" {
-		return fmt.Errorf("пресет не найден для: %s", name)
+		return fmt.Errorf(tr("preset not found for: %s"), name)
 	}
 	fmt.Println(text)
 	return nil

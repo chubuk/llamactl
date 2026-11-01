@@ -54,8 +54,8 @@ func openInEditor(editor, path string) error {
 }
 
 func usage(msg string) {
-	fmt.Fprintf(os.Stderr, "Ошибка: %s\n", msg)
-	fmt.Fprintf(os.Stderr, "Пример: см. llama help\n")
+	fmt.Fprintf(os.Stderr, "%s %s\n", tr("Error:"), msg)
+	fmt.Fprintf(os.Stderr, "%s\n", tr("Example: see llama help"))
 	os.Exit(1)
 }
 
@@ -122,13 +122,13 @@ func main() {
 	case "help", "-h", "--help", "/h", "":
 		showHelp(cfg)
 	default:
-		fmt.Fprintf(os.Stderr, "Неизвестная команда: %s\n\n", cmd)
+		fmt.Fprintf(os.Stderr, "%s\n\n", tr("Unknown command: %s", cmd))
 		showHelp(cfg)
 		os.Exit(1)
 	}
 
 	if cmdErr != nil {
-		fmt.Fprintln(os.Stderr, "Ошибка:", cmdErr)
+		fmt.Fprintln(os.Stderr, tr("Error:"), cmdErr)
 		os.Exit(1)
 	}
 }

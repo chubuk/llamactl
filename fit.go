@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -46,7 +47,7 @@ func parseFitOutput(s string) (fitResult, error) {
 	var r fitResult
 	need := func(i int, flag string) (string, error) {
 		if i+1 >= len(toks) {
-			return "", fmt.Errorf("нет значения после %s в выводе fit-params", flag)
+			return "", fmt.Errorf(tr("missing value after %s in fit-params output"), flag)
 		}
 		return toks[i+1], nil
 	}
@@ -89,11 +90,11 @@ func parseFitOutput(s string) (fitResult, error) {
 			r.overrideTensor = v
 			i++
 		default:
-			return r, fmt.Errorf("неизвестный аргумент в выводе fit-params: %q", toks[i])
+			return r, fmt.Errorf(tr("unknown argument in fit-params output: %q"), toks[i])
 		}
 	}
 	if r.ctxSize <= 0 {
-		return r, fmt.Errorf("вывод fit-params не содержит -c (получено: %q)", strings.TrimSpace(s))
+		return r, fmt.Errorf(tr("fit-params output has no -c (got: %q)"), strings.TrimSpace(s))
 	}
 	return r, nil
 }
@@ -152,23 +153,23 @@ func parseTuneArgs(args []string) (string, []string, map[string]string, error) {
 			}
 			if !eq {
 				if i+1 >= len(args) {
-					return "", nil, nil, fmt.Errorf("нет значения после --%s", k)
+					return "", nil, nil, fmt.Errorf(tr("missing value after --%s"), k)
 				}
 				i++
 				v = args[i]
 			}
 			if v == "" {
-				return "", nil, nil, fmt.Errorf("пустое значение для --%s", k)
+				return "", nil, nil, fmt.Errorf(tr("empty value for --%s"), k)
 			}
 			put(k, v)
 		case name == "":
 			name = a
 		default:
-			return "", nil, nil, fmt.Errorf("лишний аргумент: %s", a)
+			return "", nil, nil, fmt.Errorf(tr("unexpected argument: %s"), a)
 		}
 	}
 	if name == "" {
-		return "", nil, nil, fmt.Errorf("укажите имя модели: llama tune <имя> [--ключ значение]")
+		return "", nil, nil, errors.New(tr("specify model name: llama tune <name> [--key value]"))
 	}
 	return name, order, m, nil
 }
@@ -187,7 +188,7 @@ func cmdTune(cfg config, args []string) error {
 	}
 	path := modelPath(cfg, name)
 	if _, err := os.Stat(path); err != nil {
-		return fmt.Errorf("модель не найдена: %s", path)
+		return fmt.Errorf(tr("model not found: %s"), path)
 	}
 
 	// Качество/память: шаблон; вытесняется значениями пользователя.
@@ -219,9 +220,9 @@ func cmdTune(cfg config, args []string) error {
 	}
 
 	if isUnitActive(cfg, activeUnit(cfg)) {
-		fmt.Println("• Сервер активен: свободной VRAM меньше, оценка может быть консервативной (лучше tune при остановленном сервере)")
+		fmt.Println(tr("server is active: less free VRAM, the estimate may be conservative (prefer tune with the server stopped)"))
 	}
-	fmt.Println("═══ Расчёт размещения (llama-fit-params) ═══")
+	fmt.Println(tr("=== Placement calculation (llama-fit-params) ==="))
 	res, err := runFit(cfg, path, fixed)
 	if err != nil {
 		return err
@@ -261,20 +262,20 @@ func cmdTune(cfg config, args []string) error {
 	if err := upsertSection(cfg.presets, name, keys); err != nil {
 		return err
 	}
-	fmt.Printf("✓ Пресет обновлён: [%s]\n", name)
+	fmt.Println(tr("preset updated: [%s]", name))
 	sec, err := presetShow(cfg.presets, name)
 	if err != nil {
 		return err
 	}
 	fmt.Println(sec)
 	fmt.Println()
-	fmt.Println("Применить: llama restart")
+	fmt.Println(tr("Apply: llama restart"))
 	return nil
 }
 
 func cmdInfo(cfg config, args []string) error {
 	if len(args) < 1 || args[0] == "" {
-		usage("укажите имя модели: llama info <имя>")
+		usage(tr("specify model name: llama info <name>"))
 	}
 	if err := ensureDirs(cfg); err != nil {
 		return err
@@ -283,33 +284,34 @@ func cmdInfo(cfg config, args []string) error {
 	path := modelPath(cfg, name)
 	st, err := os.Stat(path)
 	if err != nil {
-		return fmt.Errorf("модель не найдена: %s", path)
+		return fmt.Errorf(tr("model not found: %s"), path)
 	}
 	fmt.Printf("═══ %s ═══\n", name)
-	fmt.Printf("Файл: %s (%s)\n", path, humanBytes(st.Size()))
+	fmt.Println(tr("File: %s (%s)", path, humanBytes(st.Size())))
 
 	fmt.Println("── GGUF ──")
 	pairs, err := ggufMeta(path)
 	if err != nil {
-		fmt.Printf("(метаданные недоступны: %v)\n", err)
+		fmt.Println(tr("(metadata unavailable: %v)", err))
 	} else {
 		fmt.Println(formatGgufMeta(pairs))
 	}
 
 	if out, err := runFitPrint(cfg, path, nil); err == nil && out != "" {
-		fmt.Println("── Оценка памяти (MiB: device, model, context, compute) ──")
+		fmt.Println(tr("=== Memory estimate (MiB: device, model, context, compute) ==="))
 		fmt.Println(out)
 	} else if err != nil {
-		fmt.Printf("── Оценка памяти ──\n(недоступно: %v)\n", err)
+		fmt.Println(tr("=== Memory estimate ==="))
+		fmt.Println(tr("(unavailable: %v)", err))
 	}
 
-	fmt.Println("── Пресет ──")
+	fmt.Println(tr("=== Preset ==="))
 	sec, err := presetShow(cfg.presets, name)
 	if err != nil {
 		return err
 	}
 	if sec == "" {
-		fmt.Println("(нет; создать: llama tune " + name + ")")
+		fmt.Println(tr("(none; create: llama tune %s)", name))
 	} else {
 		fmt.Println(sec)
 	}

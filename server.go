@@ -59,7 +59,7 @@ func waitReady(cfg config, timeout time.Duration) error {
 		}
 		cancel()
 		if time.Now().After(deadline) {
-			return fmt.Errorf("сервер не ответил на %s за %s", url, timeout)
+			return fmt.Errorf(tr("server did not respond at %s within %s"), url, timeout)
 		}
 		time.Sleep(2 * time.Second)
 	}
@@ -90,12 +90,12 @@ func probeMode(cfg config) (enabled bool, ok bool) {
 func modeLabel(cfg config) string {
 	enabled, ok := probeMode(cfg)
 	if !ok {
-		return "неизвестно (сервер не отвечает)"
+		return tr("unknown (server not responding)")
 	}
 	if enabled {
-		return "MCP proxy (cors-proxy включён)"
+		return tr("MCP proxy (cors-proxy enabled)")
 	}
-	return "обычный (cors-proxy выключен)"
+	return tr("normal (cors-proxy disabled)")
 }
 
 func startService(cfg config, proxy bool) error {
@@ -106,18 +106,18 @@ func startService(cfg config, proxy bool) error {
 	}
 	if isUnitActive(cfg, other) {
 		if out, err := runSystemctl(cfg, false, "stop", other); err != nil {
-			return fmt.Errorf("остановка %s: %w: %s", other, err, strings.TrimSpace(out))
+			return fmt.Errorf(tr("stopping %s: %w: %s"), other, err, strings.TrimSpace(out))
 		}
 	}
 	if out, err := runSystemctl(cfg, false, "restart", target); err != nil {
-		return fmt.Errorf("запуск %s: %w: %s", target, err, strings.TrimSpace(out))
+		return fmt.Errorf(tr("starting %s: %w: %s"), target, err, strings.TrimSpace(out))
 	}
 	if err := waitReady(cfg, 30*time.Second); err != nil {
 		return err
 	}
 	if proxy {
 		if enabled, ok := probeMode(cfg); !ok || !enabled {
-			return fmt.Errorf("сервер запущен, но --ui-mcp-proxy не применился (см. %s: llama tail)", target)
+			return fmt.Errorf(tr("server started, but --ui-mcp-proxy was not applied (see %s: llama tail)"), target)
 		}
 	}
 	return nil
@@ -134,35 +134,35 @@ func cmdStart(cfg config, proxy bool) error {
 	runSystemctl(cfg, true, "status", unit, "--no-pager", "-n", "5")
 	fmt.Println()
 	fmt.Printf("API: %s/v1\n", cfg.baseURL())
-	fmt.Printf("Режим: %s\n", modeLabel(cfg))
+	fmt.Println(tr("Mode: %s", modeLabel(cfg)))
 	return nil
 }
 
 func cmdStop(cfg config) error {
 	if _, err := runSystemctl(cfg, false, "stop", cfg.service, cfg.proxyService()); err != nil {
-		return fmt.Errorf("остановка сервера: %w", err)
+		return fmt.Errorf("stop: %w", err)
 	}
-	fmt.Println("Остановлен")
+	fmt.Println(tr("Stopped"))
 	return nil
 }
 
 func cmdRestart(cfg config) error {
 	unit := activeUnit(cfg)
 	if out, err := runSystemctl(cfg, false, "restart", unit); err != nil {
-		return fmt.Errorf("перезапуск %s: %w: %s", unit, err, strings.TrimSpace(out))
+		return fmt.Errorf(tr("restarting %s: %w: %s"), unit, err, strings.TrimSpace(out))
 	}
 	if err := waitReady(cfg, 30*time.Second); err != nil {
 		return err
 	}
 	runSystemctl(cfg, true, "status", unit, "--no-pager", "-n", "5")
-	fmt.Printf("Режим: %s\n", modeLabel(cfg))
+	fmt.Println(tr("Mode: %s", modeLabel(cfg)))
 	return nil
 }
 
 func cmdStatus(cfg config) error {
 	unit := activeUnit(cfg)
 	runSystemctl(cfg, true, "status", unit, "--no-pager")
-	fmt.Printf("Режим: %s\n", modeLabel(cfg))
+	fmt.Println(tr("Mode: %s", modeLabel(cfg)))
 	return nil
 }
 
@@ -192,13 +192,13 @@ func cmdHealth(cfg config) error {
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("Health: не отвечает")
-		return fmt.Errorf("сервер недоступен: %w", err)
+		fmt.Println(tr("Health: not responding"))
+		return fmt.Errorf(tr("server unavailable: %w"), err)
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	fmt.Printf("Health: %s\n", strings.TrimSpace(string(body)))
-	fmt.Printf("Режим: %s\n", modeLabel(cfg))
+	fmt.Println(tr("Mode: %s", modeLabel(cfg)))
 	return nil
 }
 
@@ -206,7 +206,7 @@ func cmdReload(cfg config) error {
 	if out, err := runSystemctl(cfg, false, "daemon-reload"); err != nil {
 		return fmt.Errorf("daemon-reload: %w: %s", err, strings.TrimSpace(out))
 	}
-	fmt.Println("Конфиг systemd перечитан")
+	fmt.Println(tr("Systemd config reloaded"))
 	return nil
 }
 
@@ -220,9 +220,9 @@ func cmdEnableSvc(cfg config, enable bool) error {
 		return fmt.Errorf("%s %s: %w: %s", verb, unit, err, strings.TrimSpace(out))
 	}
 	if enable {
-		fmt.Printf("Автозапуск включён для %s\n", unit)
+		fmt.Println(tr("Autostart enabled for %s", unit))
 	} else {
-		fmt.Printf("Автозапуск отключён для %s\n", unit)
+		fmt.Println(tr("Autostart disabled for %s", unit))
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -69,13 +70,13 @@ func cmdList(cfg config) error {
 	if err := ensureDirs(cfg); err != nil {
 		return err
 	}
-	fmt.Printf("═══ Активные модели (%s) ═══\n", cfg.modelsDir)
+	fmt.Printf(tr("=== Active models (%s) ===")+"\n", cfg.modelsDir)
 	active, err := listGguf(cfg.modelsDir)
 	if err != nil {
 		return err
 	}
 	if len(active) == 0 {
-		fmt.Println("  (пусто)")
+		fmt.Println(tr("  (empty)"))
 	}
 	for _, f := range active {
 		name := modelName(f)
@@ -92,23 +93,23 @@ func cmdList(cfg config) error {
 	}
 
 	fmt.Println()
-	fmt.Printf("═══ Отключённые модели (%s) ═══\n", cfg.disabledDir)
+	fmt.Printf(tr("=== Disabled models (%s) ===")+"\n", cfg.disabledDir)
 	disabled, err := listGguf(cfg.disabledDir)
 	if err != nil {
 		return err
 	}
 	if len(disabled) == 0 {
-		fmt.Println("  (пусто)")
+		fmt.Println(tr("  (empty)"))
 	}
 	for _, f := range disabled {
 		fmt.Printf("  %s\n", modelName(f))
 	}
 
 	fmt.Println()
-	fmt.Println("═══ Загружено в API ═══")
+	fmt.Println(tr("=== Loaded in API ==="))
 	ids, err := listLoadedModels(cfg)
 	if err != nil {
-		fmt.Println("  (сервер не запущен)")
+		fmt.Println(tr("  (server not running)"))
 		return nil
 	}
 	if len(ids) == 0 {
@@ -152,28 +153,28 @@ func listLoadedModels(cfg config) ([]string, error) {
 
 func requireName(args []string, usageLine string) string {
 	if len(args) < 1 || args[0] == "" {
-		usage("укажите имя модели (без .gguf)\nПример: " + usageLine)
+		usage(tr("specify model name (without .gguf)\nExample: %s", usageLine))
 	}
 	return args[0]
 }
 
 func restartService(cfg config) error {
-	fmt.Println("Перезапуск сервера...")
+	fmt.Println(tr("Restarting server..."))
 	unit := activeUnit(cfg)
 	if out, err := runSystemctl(cfg, false, "restart", unit); err != nil {
-		return fmt.Errorf("перезапуск %s: %w: %s", unit, err, strings.TrimSpace(out))
+		return fmt.Errorf(tr("restarting %s: %w: %s"), unit, err, strings.TrimSpace(out))
 	}
 	if err := waitReady(cfg, 30*time.Second); err != nil {
 		return err
 	}
-	fmt.Println("✓ Готово")
+	fmt.Println(tr("Done"))
 	return nil
 }
 
 // offerPreset: предложить tune; при отказе — шаблонный пресет с запросом ctx (как в bash-версии).
 func offerPreset(cfg config, name string, forced map[string]string) error {
 	r := stdinReader()
-	if confirm(r, fmt.Sprintf("Настроить пресет для [%s] через llama tune?", name), true) {
+	if confirm(r, tr("Configure preset for [%s] via llama tune?", name), true) {
 		var args []string
 		args = append(args, name)
 		for _, k := range tuneOrderFromMap(forced) {
@@ -186,7 +187,7 @@ func offerPreset(cfg config, name string, forced map[string]string) error {
 		return err
 	}
 	if exists {
-		fmt.Printf("• Пресет уже существует: [%s]\n", name)
+		fmt.Println(tr("preset already exists: [%s]", name))
 		return nil
 	}
 	ctxSize := "16384"
@@ -194,7 +195,7 @@ func offerPreset(cfg config, name string, forced map[string]string) error {
 		ctxSize = v
 	} else {
 		for {
-			ans := promptLine(r, "Введите ctx-size для [%s] (Enter = %s): ", name, ctxSize)
+			ans := promptLine(r, tr("Enter ctx-size for [%s] (Enter = %s): "), name, ctxSize)
 			if ans == "" {
 				break
 			}
@@ -202,7 +203,7 @@ func offerPreset(cfg config, name string, forced map[string]string) error {
 				ctxSize = ans
 				break
 			}
-			fmt.Println("  ожидается положительное число")
+			fmt.Println(" ", tr("expected a positive number"))
 		}
 	}
 	return upsertSection(cfg.presets, name, []kv{
@@ -245,10 +246,10 @@ func parseCtxFlag(args []string) (rest []string, forced map[string]string) {
 func cmdAdd(cfg config, args []string) error {
 	args, forced := parseCtxFlag(args)
 	if len(args) < 1 || args[0] == "" {
-		usage("укажите репозиторий HuggingFace\nПример: llama add bartowski/Qwen2.5-Coder-7B-Instruct-GGUF Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf")
+		usage(tr("specify HuggingFace repository\nExample: llama add bartowski/Qwen2.5-Coder-7B-Instruct-GGUF Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf"))
 	}
 	if _, err := exec.LookPath("hf"); err != nil {
-		return fmt.Errorf("команда 'hf' не найдена, установите: pip3 install --user huggingface_hub[cli]")
+		return errors.New(tr("command 'hf' not found, install: pip3 install --user huggingface_hub[cli]"))
 	}
 	if err := ensureDirs(cfg); err != nil {
 		return err
@@ -264,12 +265,12 @@ func cmdAdd(cfg config, args []string) error {
 		return err
 	}
 
-	fmt.Println("═══ Скачивание модели ═══")
-	fmt.Println("Репозиторий:", repo)
+	fmt.Println(tr("=== Downloading model ==="))
+	fmt.Println(tr("Repository: %s", repo))
 	if file != "" {
-		fmt.Println("Файл:", file)
+		fmt.Println(tr("File: %s", file))
 	} else {
-		fmt.Println("(файл не указан — будет загружен репозиторий целиком)")
+		fmt.Println(tr("(no file specified — the whole repository will be downloaded)"))
 	}
 
 	hfArgs := []string{"download", repo}
@@ -282,7 +283,7 @@ func cmdAdd(cfg config, args []string) error {
 	hf.Stdout = os.Stdout
 	hf.Stderr = os.Stderr
 	if err := hf.Run(); err != nil {
-		return fmt.Errorf("скачивание: %w", err)
+		return fmt.Errorf(tr("download: %w"), err)
 	}
 
 	after, err := listGguf(cfg.modelsDir)
@@ -301,9 +302,9 @@ func cmdAdd(cfg config, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Printf("═══ Новые .gguf в %s ═══\n", cfg.modelsDir)
+	fmt.Printf(tr("=== New .gguf in %s ===")+"\n", cfg.modelsDir)
 	if len(fresh) == 0 {
-		fmt.Println("  (не обнаружены — возможно, файл уже был)")
+		fmt.Println(tr("  (none found — the file may already exist)"))
 	}
 	for _, f := range fresh {
 		fmt.Println(" ", modelName(f))
@@ -327,12 +328,12 @@ func cmdRemove(cfg config, args []string) error {
 	file := filepath.Join(cfg.modelsDir, name+".gguf")
 	st, err := os.Stat(file)
 	if err != nil {
-		return fmt.Errorf("модель не найдена: %s (см. llama list)", file)
+		return fmt.Errorf(tr("model not found: %s (see llama list)"), file)
 	}
 	r := stdinReader()
-	fmt.Printf("Удаляемая модель: %s (%s)\n", name, humanBytes(st.Size()))
-	if !confirm(r, "Подтвердить удаление?", false) {
-		fmt.Println("Отменено")
+	fmt.Println(tr("Model to delete: %s (%s)", name, humanBytes(st.Size())))
+	if !confirm(r, tr("Confirm deletion?"), false) {
+		fmt.Println(tr("Cancelled"))
 		return nil
 	}
 	if exists, err := presetExists(cfg.presets, name); err != nil {
@@ -345,7 +346,7 @@ func cmdRemove(cfg config, args []string) error {
 	if err := os.Remove(file); err != nil {
 		return err
 	}
-	fmt.Println("✓ Файл удалён:", file)
+	fmt.Println(tr("File deleted: %s", file))
 	return restartService(cfg)
 }
 
@@ -356,12 +357,12 @@ func cmdDisable(cfg config, args []string) error {
 	}
 	src := filepath.Join(cfg.modelsDir, name+".gguf")
 	if _, err := os.Stat(src); err != nil {
-		return fmt.Errorf("модель не найдена: %s (см. llama list)", name)
+		return fmt.Errorf(tr("model not found: %s (see llama list)"), name)
 	}
 	if err := os.Rename(src, filepath.Join(cfg.disabledDir, name+".gguf")); err != nil {
 		return err
 	}
-	fmt.Printf("✓ Модель перемещена в %s\n", cfg.disabledDir)
+	fmt.Println(tr("Model moved to %s", cfg.disabledDir))
 	if exists, err := presetExists(cfg.presets, name); err != nil {
 		return err
 	} else if exists {
@@ -372,7 +373,7 @@ func cmdDisable(cfg config, args []string) error {
 	if err := restartService(cfg); err != nil {
 		return err
 	}
-	fmt.Println("✓ Модель отключена")
+	fmt.Println(tr("Model disabled"))
 	return nil
 }
 
@@ -384,18 +385,18 @@ func cmdEnable(cfg config, args []string) error {
 	}
 	src := filepath.Join(cfg.disabledDir, name+".gguf")
 	if _, err := os.Stat(src); err != nil {
-		return fmt.Errorf("модель не найдена в %s: %s", cfg.disabledDir, name)
+		return fmt.Errorf(tr("model not found in %s: %s"), cfg.disabledDir, name)
 	}
 	if err := os.Rename(src, filepath.Join(cfg.modelsDir, name+".gguf")); err != nil {
 		return err
 	}
-	fmt.Printf("✓ Модель возвращена в %s\n", cfg.modelsDir)
+	fmt.Println(tr("Model returned to %s", cfg.modelsDir))
 	if err := offerPreset(cfg, name, forced); err != nil {
 		return err
 	}
 	if err := restartService(cfg); err != nil {
 		return err
 	}
-	fmt.Println("✓ Готово")
+	fmt.Println(tr("Done"))
 	return nil
 }

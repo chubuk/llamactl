@@ -20,7 +20,7 @@ func readGGUFString(r io.Reader) (string, error) {
 		return "", err
 	}
 	if n > maxStr {
-		return "", fmt.Errorf("слишком длинная строка в GGUF: %d байт", n)
+		return "", fmt.Errorf(tr("string too long in GGUF: %d bytes"), n)
 	}
 	buf := make([]byte, n)
 	if _, err := io.ReadFull(r, buf); err != nil {
@@ -66,7 +66,7 @@ func skipGGUFValue(r io.Reader, typ uint32) error {
 	case ggufTypeArray:
 		return skipGGUFArray(r)
 	default:
-		return fmt.Errorf("неизвестный тип GGUF: %d", typ)
+		return fmt.Errorf(tr("unknown GGUF type: %d"), typ)
 	}
 }
 
@@ -125,7 +125,7 @@ func readGGUFScalar(r io.Reader, typ uint32) (string, bool, error) {
 		err = skipGGUFArray(r)
 		return "", false, err
 	default:
-		return "", false, fmt.Errorf("неизвестный тип GGUF: %d", typ)
+		return "", false, fmt.Errorf(tr("unknown GGUF type: %d"), typ)
 	}
 	return v, true, err
 }
@@ -143,14 +143,14 @@ func ggufMeta(path string) ([]kv, error) {
 		return nil, err
 	}
 	if string(magic) != "GGUF" {
-		return nil, fmt.Errorf("не GGUF-файл (magic = %q)", magic)
+		return nil, fmt.Errorf(tr("not a GGUF file (magic = %q)"), magic)
 	}
 	var version uint32
 	if err := binary.Read(f, binary.LittleEndian, &version); err != nil {
 		return nil, err
 	}
 	if version < 2 || version > 3 {
-		return nil, fmt.Errorf("неподдерживаемая версия GGUF: %d", version)
+		return nil, fmt.Errorf(tr("unsupported GGUF version: %d"), version)
 	}
 	// Порядок заголовка GGUF: tensor_count, затем kv_count.
 	var nTensors, nkv uint64

@@ -18,6 +18,7 @@ the binary can be installed as `llama`).
 - **Proxy mode** — `--ui-mcp-proxy` (CORS proxy so the built-in Web UI can reach remote
   MCP servers) as a separate, reboot-persistent systemd unit
 - **Safe by default** — the server listens on `127.0.0.1`
+- **UI in English and Russian** — follows your locale (`LANG`), or set `lang` / `LLAMA_LANG`
 
 ## Requirements
 
@@ -80,6 +81,7 @@ to see every resolved setting and its source.
 | `fit-params` | `LLAMA_FIT_PARAMS` | `~/llama.cpp/build/bin/llama-fit-params` |
 | `service` | `LLAMA_SERVICE` | `llama-server` |
 | `editor` | `VISUAL`/`EDITOR` | `nano` |
+| `lang` | `LLAMA_LANG` | locale (`en`/`ru`) |
 
 ## Commands
 
