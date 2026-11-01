@@ -40,6 +40,8 @@ nfpms:
         dst: /usr/share/doc/llamactl/config.ini.example
       - src: README.md
         dst: /usr/share/doc/llamactl/README.md
+      - src: README.ru.md
+        dst: /usr/share/doc/llamactl/README.ru.md
       - src: LICENSE
         dst: /usr/share/doc/llamactl/LICENSE
       - src: /usr/bin/llamactl

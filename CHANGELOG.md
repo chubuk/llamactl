@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1 — 2026-11-01
+
+- Russian documentation: `README.ru.md` (with language links in `README.md`)
+- `README.ru.md` is now included in the `.deb`/`.rpm` packages
+
 ## 1.0.0 — 2026-11-01
 
 First release.

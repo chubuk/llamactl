@@ -7,6 +7,8 @@ and **model presets automatically tuned to your GPU/CPU** via `llama-fit-params`
 The command you type is `llama` (like `rg` from ripgrep — the repo is `llamactl`,
 the binary can be installed as `llama`).
 
+**Languages: English | [Русский](README.ru.md)**
+
 ## Features
 
 - **Server control** — `start`, `start-proxy`, `stop`, `restart`, `status`, `log`, `tail`, `health`
