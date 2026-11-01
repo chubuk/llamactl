@@ -178,6 +178,23 @@ func modelPath(cfg config, name string) string {
 	return cfg.modelsDir + string(os.PathSeparator) + name + ".gguf"
 }
 
+// placementKeys — простые флаги размещения MoE/CPU; наследуются из пресета при повторном tune.
+var placementKeys = []string{"n-cpu-moe", "cpu-moe", "n-cpu-ffn"}
+
+// inheritPlacement подмешивает в forced ключи размещения из существующей секции:
+// повторный tune без явных флагов не должен переписывать n-cpu-moe гигантским override-tensor.
+func inheritPlacement(section string, forced map[string]string, order *[]string) {
+	for _, k := range placementKeys {
+		if _, ok := forced[k]; ok {
+			continue
+		}
+		if v, ok := sectionValue(section, k); ok {
+			forced[k] = v
+			*order = append(*order, k)
+		}
+	}
+}
+
 func cmdTune(cfg config, args []string) error {
 	name, order, forced, err := parseTuneArgs(args)
 	if err != nil {
@@ -189,6 +206,12 @@ func cmdTune(cfg config, args []string) error {
 	path := modelPath(cfg, name)
 	if _, err := os.Stat(path); err != nil {
 		return fmt.Errorf(tr("model not found: %s"), path)
+	}
+
+	var sec string
+	if s, err := presetShow(cfg.presets, name); err == nil {
+		sec = s
+		inheritPlacement(sec, forced, &order)
 	}
 
 	// Качество/память: шаблон; вытесняется значениями пользователя.
@@ -262,8 +285,16 @@ func cmdTune(cfg config, args []string) error {
 	if err := upsertSection(cfg.presets, name, keys); err != nil {
 		return err
 	}
+	// Простые флаги размещения заданы — устаревший материализованный -ot больше не нужен.
+	if forcedMoe || forcedCpuMoe || forcedCpuFfn {
+		if _, has := sectionValue(sec, "override-tensor"); has {
+			if err := dropSectionKey(cfg.presets, name, "override-tensor"); err != nil {
+				return err
+			}
+		}
+	}
 	fmt.Println(tr("preset updated: [%s]", name))
-	sec, err := presetShow(cfg.presets, name)
+	sec, err = presetShow(cfg.presets, name)
 	if err != nil {
 		return err
 	}

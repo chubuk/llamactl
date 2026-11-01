@@ -127,6 +127,11 @@ func upsertSection(path, name string, newKeys []kv) error {
 				}
 				merged = append(merged, ln)
 			}
+			// Хвостовые пустые строки секции (в т.ч. до конца файла) убираем,
+			// чтобы новые ключи не дописывались после «воздуха».
+			for len(merged) > 0 && strings.TrimSpace(merged[len(merged)-1]) == "" {
+				merged = merged[:len(merged)-1]
+			}
 			for _, k := range newKeys {
 				if !seen[k.key] {
 					merged = append(merged, formatKV(k))
@@ -146,6 +151,49 @@ func upsertSection(path, name string, newKeys []kv) error {
 				out = append(out, formatKV(k))
 			}
 		}
+		return writeLines(path, out)
+	})
+}
+
+// sectionValue возвращает значение ключа из текста секции пресета.
+func sectionValue(section, key string) (string, bool) {
+	for _, ln := range strings.Split(section, "\n") {
+		if p, ok := parseKVLine(ln); ok && p.key == key {
+			return p.value, true
+		}
+	}
+	return "", false
+}
+
+// dropSectionKey удаляет ключ из секции (для чистки устаревших ключей размещения).
+func dropSectionKey(path, name, key string) error {
+	return withPresetsLock(path, func() error {
+		lines, err := readLines(path)
+		if err != nil {
+			return err
+		}
+		start, end := findSection(lines, name)
+		if start < 0 {
+			return nil
+		}
+		if err := backupPresets(path); err != nil {
+			return err
+		}
+		kept := make([]string, 0, end-start)
+		for _, ln := range lines[start+1 : end] {
+			if p, ok := parseKVLine(ln); ok && p.key == key {
+				continue
+			}
+			kept = append(kept, ln)
+		}
+		for len(kept) > 0 && strings.TrimSpace(kept[len(kept)-1]) == "" {
+			kept = kept[:len(kept)-1]
+		}
+		out := make([]string, 0, len(lines)-1)
+		out = append(out, lines[:start]...)
+		out = append(out, sectionHeader(name))
+		out = append(out, kept...)
+		out = append(out, lines[end:]...)
 		return writeLines(path, out)
 	})
 }
