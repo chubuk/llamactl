@@ -42,9 +42,9 @@ nfpms:
         dst: /usr/share/doc/llamactl/README.md
       - src: LICENSE
         dst: /usr/share/doc/llamactl/LICENSE
-      - dst: /usr/bin/llama
+      - src: /usr/bin/llamactl
+        dst: /usr/bin/llama
         type: symlink
-        link: /usr/bin/llamactl
 
 checksum:
   name_template: checksums.txt
